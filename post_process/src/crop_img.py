@@ -26,10 +26,14 @@ bridge = CvBridge()
 # Detected class
 detected_nums = set()
 
+# Current Image
+image = None
 
-"""
 def image_callback(msg):
-    print("Received an image!")
+    # print("Received an image!")
+    global image
+    image = msg
+    """    
     try:
         # Convert your ROS Image message to OpenCV2
         cv2_img = bridge.imgmsg_to_cv2(msg, "bgr8")
@@ -38,10 +42,11 @@ def image_callback(msg):
     else:
         # Save your OpenCV2 image as a jpeg 
         cv2.imwrite('camera_image.jpeg', cv2_img)
-"""
+    """
 
 def box_callback(msg):
     # print("Received a target!")
+    global image
     for i in range(len(msg.bounding_boxes)):
         target = msg.bounding_boxes[i].Class
 	if (target not in detected_nums):
@@ -51,13 +56,29 @@ def box_callback(msg):
 	    ymin = msg.bounding_boxes[i].ymin
 	    ymax = msg.bounding_boxes[i].ymax
             print("Class: {}, xmin: {}, xmax: {}, ymin:{}, ymax:{}".format(target, xmin, xmax, ymin, ymax))
+            if(image):
+                print("Image Available")
+                image_name = "{}_image.jpeg".format(target)
+                
+                # Code below to save image
+                try:
+                    # Convert your ROS Image message to OpenCV2
+                    cv2_img = bridge.imgmsg_to_cv2(image, "bgr8")
+                except CvBridgeError, e:
+                    print(e)
+                else:
+                    cv2_crop = cv2_img[ymin:ymax, xmin:xmax]
+                    # Save your OpenCV2 image as a jpeg 
+                    cv2.imwrite(image_name, cv2_crop)
+                    
+                
 
 def main():
     rospy.init_node('image_listener')
     # Define your image topic
-    # image_topic = "/cameras/left_hand_camera/image"
+    image_topic = "/camera/color/image_raw"
     # Set up your subscriber and define its callback
-    # rospy.Subscriber(image_topic, Image, image_callback)
+    rospy.Subscriber(image_topic, Image, image_callback)
     
     box_topic = "/darknet_ros/bounding_boxes"
 
