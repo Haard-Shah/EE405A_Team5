@@ -10,8 +10,13 @@ This ROS package provides an interface for controlling an RC car using Ackermann
 
 ## Launching the Node
 To launch the RC Car Control node, use the provided launch file:
-`roslaunch rc_car_control rc_car_control.launch`
 
+    `roslaunch rc_car_control rc_car_control.launch`
+
+## Testing script
+To run a quick test run the following file: 
+
+    `rosrun rc_car_control test_rc_car_control.py`
 
 ## Topics
 - `/auto_mode` (std_msgs/Bool): Controls whether the car is in autonomous mode.

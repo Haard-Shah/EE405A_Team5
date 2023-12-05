@@ -14,6 +14,7 @@ class RCCarController:
         self.pwm_lower_bound = 1100  # Full left
         self.pwm_neutral = 1500      # Neutral
         self.max_steering_angle = 30 # Max steering angle in degrees
+        self.max_speed = 5           # adjust this later
 
         # Subscribers
         self.auto_mode_sub = rospy.Subscriber(auto_mode_topic, Bool, self.auto_mode_callback)
@@ -70,6 +71,8 @@ class RCCarController:
         self.throttle_pwm_pub.publish(pwm_signal)
 
     def steering_angle_to_pwm(self, angle):
+        rospy.loginfo("Angle command: %s rads" % angle)
+        #TODO: May need to add rads to deg or rads to pwm logic here.
         # Map steering angle to PWM value
         return int(self.pwm_neutral + (angle / self.max_steering_angle) * (self.pwm_upper_bound - self.pwm_neutral))
 
