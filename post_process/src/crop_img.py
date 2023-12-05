@@ -29,6 +29,17 @@ detected_nums = set()
 # Current Image
 image = None
 
+def publish_image(cv2_file):
+    image_pub = rospy.Publisher("/result_image",Image)
+    try:
+        # Convert your ROS Image message to OpenCV2
+        ros_img = bridge.cv2_to_imgmsg(cv2_file, "bgr8")
+    except CvBridgeError, e:
+        print(e)
+    else:
+        # Publish image
+        image_pub.publish(ros_img)
+
 def image_callback(msg):
     # print("Received an image!")
     global image
@@ -69,9 +80,8 @@ def box_callback(msg):
                 else:
                     cv2_crop = cv2_img[ymin:ymax, xmin:xmax]
                     # Save your OpenCV2 image as a jpeg 
-                    cv2.imwrite(image_name, cv2_crop)
-                    
-                
+                    # cv2.imwrite(image_name, cv2_crop)
+                    publish_image(cv2_crop)
 
 def main():
     rospy.init_node('image_listener')
