@@ -1,0 +1,9 @@
+<launch>
+    <!-- RC Car Control Node -->
+    <node name="rc_car_controller" pkg="rc_car_control" type="rc_car_controller.py" output="screen">
+        <!-- Parameters can be added here if needed. Change the topics if they are different. -->
+        <param name="auto_mode_topic" value="/auto_mode" />
+        <param name="steer_topic" value="/auto_cmd/steer" />
+        <param name="throttle_topic" value="/auto_cmd/throttle" />
+    </node>
+</launch>
