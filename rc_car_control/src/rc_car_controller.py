@@ -4,8 +4,13 @@ import rospy
 from std_msgs.msg import Bool, Int16
 from ackermann_msgs.msg import AckermannDrive
 
+# class steer_cmd:
+#         def __init__(self, steer_angle, steer_velocity):
+#             self.steering_angle = steer_angle
+#             self.steering_angle_velocity = steer_velocity
+
 class RCCarController:
-    def __init__(self, auto_mode_topic='/auto_mode', steer_topic='/auto_cmd/steer', throttle_topic='/auto_cmd/throttle'):
+    def __init__(self, auto_mode_topic='/auto_mode', drive_command_topic='/car_1/command'):
         # Initialize node
         rospy.init_node('rc_car_controller')
 
@@ -18,8 +23,9 @@ class RCCarController:
 
         # Subscribers
         self.auto_mode_sub = rospy.Subscriber(auto_mode_topic, Bool, self.auto_mode_callback)
-        self.steer_sub = rospy.Subscriber(steer_topic, AckermannDrive, self.steer_callback)
-        self.throttle_sub = rospy.Subscriber(throttle_topic, Int16, self.throttle_callback)
+        self.drive_command_sub = rospy.Subscriber(drive_command_topic, AckermannDrive, self.drive_command_callback)
+        # self.steer_sub = rospy.Subscriber(steer_topic, AckermannDrive, self.steer_callback)
+        # self.throttle_sub = rospy.Subscriber(throttle_topic, Int16, self.throttle_callback)
 
         # Publishers
         self.steer_pwm_pub = rospy.Publisher('/rc_car/steer_pwm', Int16, queue_size=10)
@@ -35,14 +41,23 @@ class RCCarController:
         self.auto_mode = msg.data
         rospy.loginfo("Autonomous mode: %s" % ("ON" if self.auto_mode else "OFF"))
 
-    def steer_callback(self, ackermann_cmd):
+    def drive_command_callback(self, ackermann_cmd):
+        # drive_command = AckermannDrive()
+        # drive_command.data = ackermann_cmd.data
+
+        # steer_cmd = steer_cmd(ackermann_cmd.steering_angle, ackermann_cmd.steering_angle_velocity)
+
+        self.throttle_callback(ackermann_cmd)
+        self.steer_callback(ackermann_cmd)
+
+    def steer_callback(self, steer_cmd):
         if self.auto_mode:
             # Map steering_angle to target PWM
-            self.target_pwm = self.steering_angle_to_pwm(ackermann_cmd.steering_angle)
+            self.target_pwm = self.steering_angle_to_pwm(steer_cmd.steering_angle)
 
-            if ackermann_cmd.steering_angle_velocity > 0:
+            if steer_cmd.steering_angle_velocity > 0:
                 # Calculate the number of steps for transition based on steering_angle_velocity
-                transition_steps = int(abs(self.target_pwm - self.current_pwm) / ackermann_cmd.steering_angle_velocity)
+                transition_steps = int(abs(self.target_pwm - self.current_pwm) / steer_cmd.steering_angle_velocity)
                 for _ in range(transition_steps):
                     # Gradually move towards target PWM
                     self.current_pwm += (self.target_pwm - self.current_pwm) / transition_steps
@@ -53,9 +68,9 @@ class RCCarController:
                 self.current_pwm = self.target_pwm
                 self.publish_steering_command(self.current_pwm)
 
-    def throttle_callback(self, msg):
+    def throttle_callback(self, ackermann_cmd):
         if self.auto_mode:
-            self.speed = msg.data
+            self.speed = ackermann_cmd.speed
             rospy.loginfo("Speed command: %d" % self.speed)
             pwm_value = self.speed_to_pwm(self.speed)
             self.publish_throttle_command(pwm_value)
