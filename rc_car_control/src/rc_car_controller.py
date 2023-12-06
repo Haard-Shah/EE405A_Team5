@@ -15,8 +15,11 @@ class RCCarController:
         self.steer_pwm_lower_bound = 1100  # Full left
         self.pwm_neutral = 1500      # Neutral
 
-        self.speed_pwm_upper_bound = 1700  # Full right
-        self.speed_pwm_lower_bound = 1400  # Full left
+        self.speed_F_pwm_upper_bound = 1460  # slowest forward
+        self.speed_F_pwm_lower_bound = 1474  # fastest forward
+        self.speed_R_pwm_upper_bound = 1590  # fastest reverse 
+        self.speed_R_pwm_lower_bound = 1575  # slowest reverse
+
 
         self.max_steering_angle = 15 # Max steering angle in degrees
         self.max_speed = 0.6           # adjust this later
@@ -75,7 +78,7 @@ class RCCarController:
         if self.auto_mode:
             self.speed = ackermann_cmd.speed
             pwm_value = self.speed_to_pwm(self.speed)
-            rospy.loginfo("Speed command: %d %d" % (self.speed, pwm_value))
+            rospy.loginfo("Speed command: %f %d" % (self.speed, pwm_value))
             self.publish_throttle_command(pwm_value)
 
     def publish_steering_command(self, pwm_value):
@@ -91,12 +94,13 @@ class RCCarController:
     def steering_angle_to_pwm(self, angle):
         #TODO: May need to add rads to deg or rads to pwm logic here.
         # Map steering angle to PWM value
-        return int(self.pwm_neutral + (angle / self.max_steering_angle) * (self.steer_pwm_upper_bound - self.pwm_neutral))
+        return int(self.pwm_neutral - (angle / self.max_steering_angle) * (self.steer_pwm_upper_bound - self.pwm_neutral))
 
     def speed_to_pwm(self, speed):
         # Convert speed to PWM value
         if speed >= 0:
-            return int(self.pwm_neutral + max((speed / float(self.max_speed)), 0.1) * (self.speed_pwm_upper_bound - self.pwm_neutral))
+            # return int(self.pwm_neutral + max((speed / float(self.max_speed)), 0.1) * (self.speed_pwm_upper_bound - self.pwm_neutral))
+            return (self.speed_F_pwm_lower_bound - ((speed/self.max_speed) * (self.speed_F_pwm_lower_bound - self.speed_F_pwm_upper_bound)))
         else:
             return int(self.pwm_neutral + (speed / float(self.max_speed)) * (self.pwm_neutral - self.speed_pwm_lower_bound))
 
@@ -116,3 +120,7 @@ if __name__ == '__main__':
     # controller = RCCarController(auto_mode_topic, steer_topic, throttle_topic)
     controller = RCCarController(auto_mode_topic, drive_command_topic)
     controller.run()
+
+
+# add a ctrl + C interrupt to stop
+# auto start in auto mode at start
