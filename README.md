@@ -34,7 +34,7 @@ Saikhanbileg
      `roslaunch local_costmap_generator run.launch`
 
     c. Next launch the motion primitive planner: 
-     `roslaunch motion_primitive_planner run.launch`
+     `roslaunch motion_primitives_planner run.launch`
 
 7. Preception system: [Recommend to use a new tab]
     a. Launch the Yolo v4 model 
