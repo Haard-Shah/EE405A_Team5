@@ -1,6 +1,8 @@
 #include "motion_primitives_planner/motion_primitives_planner_node.hpp"
 #include <cmath>
 
+bool all_collisions = false;
+
 /* ----- Class Functions ----- */
 MotionPlanner::MotionPlanner(ros::NodeHandle& nh) : nh_(nh)
 {
@@ -89,6 +91,7 @@ void MotionPlanner::PublishCommand(std::vector<Node> motionMinCost)
   //double steeringControl = 0.0;
   //for (const auto& node : motionMinCost) {
     // Extract the steering delta from the current node
+
   double steeringControl = motionMinCost.front().delta; //- node.yaw;
   //}
   //double steeringControl = motionMinCost.i().delta;
@@ -96,6 +99,15 @@ void MotionPlanner::PublishCommand(std::vector<Node> motionMinCost)
   double speedControl = 0.5 * (1 - std::abs(motionMinCost.front().delta) / this->MAX_DELTA);//0.3;
   //double speedControl = (1.0 / (1 + motionMinCost.front().delta));
 
+  std::cout << "Collisions: " << all_collisions << std::endl;
+
+  if (all_collisions) {
+    steeringControl = 0;
+    speedControl = -0.2;
+
+    all_collisions = false;
+  }
+  
   // Apply saturation limits to control signals if needed
 
   // Set the computed control signals to the AckermannDrive message
@@ -130,29 +142,37 @@ std::vector<std::vector<Node>> MotionPlanner::GenerateMotionPrimitives(nav_msgs:
     - you can calculate cost of each motion if you need.
   */
 
-  // initialize motion primitives
-  std::vector<std::vector<Node>> motionPrimitives;
+  try {
+    // initialize motion primitives
+    std::vector<std::vector<Node>> motionPrimitives;
 
-  // number of candidates
-  int num_candidates = this->MAX_DELTA*2 / this->DELTA_RESOL; // *2 for considering both left/right direction
+    // number of candidates
+    int num_candidates = this->MAX_DELTA*2 / this->DELTA_RESOL; // *2 for considering both left/right direction
 
-  // max progress of each motion
-  double maxProgress = this->MAX_PROGRESS;
-  for (int i=0; i<num_candidates+1; i++) {
-    // current steering delta
-    double angle_delta = this->MAX_DELTA - i * this->DELTA_RESOL;
+    // max progress of each motion
+    double maxProgress = this->MAX_PROGRESS;
+    for (int i=0; i<num_candidates+1; i++) {
 
-    // init start node
-    Node startNode(0, 0, 0, angle_delta, 0, 0, 0, -1, false);
-    
-    // rollout to generate motion
-    std::vector<Node> motionPrimitive = RolloutMotion(startNode, maxProgress, localMap);
+      // std::cout << "i: " << i;
 
-    // add current motionPrimitive
-    motionPrimitives.push_back(motionPrimitive);
+      // current steering delta
+      double angle_delta = this->MAX_DELTA - i * this->DELTA_RESOL;
+
+      // init start node
+      Node startNode(0, 0, 0, angle_delta, 0, 0, 0, -1, false);
+      
+      // rollout to generate motion
+      std::vector<Node> motionPrimitive = RolloutMotion(startNode, maxProgress, localMap);
+
+      // add current motionPrimitive
+      motionPrimitives.push_back(motionPrimitive);
+    }
+
+    return motionPrimitives;
+    }
+  catch (...) {
+    std::cout << "An error occured in GenerateMotionPrimitives()\n";
   }
-
-  return motionPrimitives;
 }
 
 std::vector<Node> MotionPlanner::RolloutMotion(Node startNode,
@@ -168,83 +188,88 @@ std::vector<Node> MotionPlanner::RolloutMotion(Node startNode,
     3. Range checking
   */
 
-  // Initialize motionPrimitive
-  std::vector<Node> motionPrimitive;
-  // Init current motion node
-  Node currMotionNode(startNode.x, startNode.y, 0, startNode.delta, 0, 0, 0, -1, false);
-  // Start from a small progress value
-  double progress = this->DIST_RESOL;
+  try {
+    // Initialize motionPrimitive
+    std::vector<Node> motionPrimitive;
+    // Init current motion node
+    Node currMotionNode(startNode.x, startNode.y, 0, startNode.delta, 0, 0, 0, -1, false);
+    // Start from a small progress value
+    double progress = this->DIST_RESOL;
 
-  // 1. Update motion node using the current steering angle delta based on the vehicle kinematics equation
-  // - while loop until the maximum progress of a motion
-  while (progress < maxProgress) {
-    // - you can use params in the header file (MOTION_VEL, WHEELBASE, TIME_RESOL)
-    // - steering angle value is 'startNode.delta' or 'currMotionNode.delta'
-    // x_t+1   := x_t + x_dot * dt
-    // y_t+1   := y_t + y_dot * dt
-    // yaw_t+1 := yaw_t + yaw_dot * dt
-    currMotionNode.x += cos(currMotionNode.yaw) * this->MOTION_VEL * this->TIME_RESOL;
-    currMotionNode.y += sin(currMotionNode.yaw) * this->MOTION_VEL * this->TIME_RESOL;
-    currMotionNode.yaw += (this->MOTION_VEL)/(this->WHEELBASE) * tan(currMotionNode.delta) * this->TIME_RESOL; //currMotionNode.delta was changed to currMotionNode.yaw
-    currMotionNode.delta = startNode.delta; 
+    // 1. Update motion node using the current steering angle delta based on the vehicle kinematics equation
+    // - while loop until the maximum progress of a motion
+    while (progress < maxProgress) {
+      // - you can use params in the header file (MOTION_VEL, WHEELBASE, TIME_RESOL)
+      // - steering angle value is 'startNode.delta' or 'currMotionNode.delta'
+      // x_t+1   := x_t + x_dot * dt
+      // y_t+1   := y_t + y_dot * dt
+      // yaw_t+1 := yaw_t + yaw_dot * dt
+      currMotionNode.x += cos(currMotionNode.yaw) * this->MOTION_VEL * this->TIME_RESOL;
+      currMotionNode.y += sin(currMotionNode.yaw) * this->MOTION_VEL * this->TIME_RESOL;
+      currMotionNode.yaw += (this->MOTION_VEL)/(this->WHEELBASE) * tan(currMotionNode.delta) * this->TIME_RESOL; //currMotionNode.delta was changed to currMotionNode.yaw
+      currMotionNode.delta = startNode.delta; 
 
-    // 2. Collision checking
-    // - local to map coordinate transform
-    Node collisionPointNode(currMotionNode.x, currMotionNode.y, currMotionNode.yaw, currMotionNode.delta, 0, 0, 0, -1, false);
-    Node collisionPointNodeMap = LocalToMapCorrdinate(collisionPointNode);
+      // 2. Collision checking
+      // - local to map coordinate transform
+      Node collisionPointNode(currMotionNode.x, currMotionNode.y, currMotionNode.yaw, currMotionNode.delta, 0, 0, 0, -1, false);
+      Node collisionPointNodeMap = LocalToMapCorrdinate(collisionPointNode);
 
-    if (CheckCollision(collisionPointNodeMap, localMap)) {
-      // - Do some process when a collision occurs.
-      // - You can save collision information & calculate collision cost here.
-      // - You can break and return the current motion primitive or keep generating rollout.
-      // For example, you can set a collision flag and break the loop
-      motionPrimitive.back().collision = true;
+      if (CheckCollision(collisionPointNodeMap, localMap)) {
+        // - Do some process when a collision occurs.
+        // - You can save collision information & calculate collision cost here.
+        // - You can break and return the current motion primitive or keep generating rollout.
+        // For example, you can set a collision flag and break the loop
+        motionPrimitive.back().collision = true;
 
-      // Calculate distance to the obstacle (Euclidean distance)
-      double distanceToObstacle = std::sqrt(std::pow(currMotionNode.x - collisionPointNodeMap.x, 2)
-                                          + std::pow(currMotionNode.y - collisionPointNodeMap.y, 2));
+        // Calculate distance to the obstacle (Euclidean distance)
+        double distanceToObstacle = std::sqrt(std::pow(currMotionNode.x - collisionPointNodeMap.x, 2)
+                                            + std::pow(currMotionNode.y - collisionPointNodeMap.y, 2));
 
-      // Define a maximum distance that corresponds to minimal severity
-      const double MAX_COLLISION_DISTANCE = 7.0; // was 5
+        // Define a maximum distance that corresponds to minimal severity
+        const double MAX_COLLISION_DISTANCE = 7.0; // was 5
 
-      // Ensure that the distance is capped at the maximum collision distance
-      distanceToObstacle = std::min(distanceToObstacle, MAX_COLLISION_DISTANCE);
+        // Ensure that the distance is capped at the maximum collision distance
+        distanceToObstacle = std::min(distanceToObstacle, MAX_COLLISION_DISTANCE);
 
-      // Calculate collision severity
-      double collisionSeverity = 1.0 - (distanceToObstacle / MAX_COLLISION_DISTANCE);
-      collisionSeverity = std::max(collisionSeverity, 0.0);  // Ensure that severity is non-negative
+        // Calculate collision severity
+        double collisionSeverity = 1.0 - (distanceToObstacle / MAX_COLLISION_DISTANCE);
+        collisionSeverity = std::max(collisionSeverity, 0.0);  // Ensure that severity is non-negative
 
-      // Assign collision severity as the collision cost
-      currMotionNode.cost_colli = collisionSeverity;
+        // Assign collision severity as the collision cost
+        currMotionNode.cost_colli = collisionSeverity;
 
-      // Break the loop after collision
-      break;
+        // Break the loop after collision
+        break;
+      }
+      // 3. Range checking
+      // - if you want to filter out motion points out of the sensor range, calculate the line-of-sight (LOS) distance & yaw angle of the node
+      // - LOS distance := sqrt(x^2 + y^2)
+      // - LOS yaw := atan2(y, x)
+      // - if LOS distance > MAX_SENSOR_RANGE or abs(LOS_yaw) > FOV*0.5 <-- outside of the sensor range
+      double LOS_DIST = sqrt(currMotionNode.x * currMotionNode.x + currMotionNode.y * currMotionNode.y);
+      double LOS_YAW = atan2(currMotionNode.y, currMotionNode.x);
+
+      if (LOS_DIST > this->MAX_SENSOR_RANGE || std::abs(LOS_YAW) > this->FOV * 0.5) {
+        // - Do some process when out-of-range occurs.
+        // - You can break and return the current motion primitive or keep generating rollout.
+        // For example, you can set an out-of-range flag and break the loop
+        currMotionNode.out_of_range = true;
+        break;
+      }
+
+      // append collision-free motion in the current motionPrimitive
+      motionPrimitive.push_back(currMotionNode);
+
+      // update progress of motion
+      progress += this->DIST_RESOL;
     }
-    // 3. Range checking
-    // - if you want to filter out motion points out of the sensor range, calculate the line-of-sight (LOS) distance & yaw angle of the node
-    // - LOS distance := sqrt(x^2 + y^2)
-    // - LOS yaw := atan2(y, x)
-    // - if LOS distance > MAX_SENSOR_RANGE or abs(LOS_yaw) > FOV*0.5 <-- outside of the sensor range
-    double LOS_DIST = sqrt(currMotionNode.x * currMotionNode.x + currMotionNode.y * currMotionNode.y);
-    double LOS_YAW = atan2(currMotionNode.y, currMotionNode.x);
 
-    if (LOS_DIST > this->MAX_SENSOR_RANGE || std::abs(LOS_YAW) > this->FOV * 0.5) {
-      // - Do some process when out-of-range occurs.
-      // - You can break and return the current motion primitive or keep generating rollout.
-      // For example, you can set an out-of-range flag and break the loop
-      currMotionNode.out_of_range = true;
-      break;
-    }
-
-    // append collision-free motion in the current motionPrimitive
-    motionPrimitive.push_back(currMotionNode);
-
-    // update progress of motion
-    progress += this->DIST_RESOL;
+    // return the current motion
+    return motionPrimitive;
   }
-
-  // return the current motion
-  return motionPrimitive;
+  catch (...) {
+    std::cout << "An error occured in RolloutMotion().\n";
+  }
 }
 
 
@@ -255,46 +280,68 @@ std::vector<Node> MotionPlanner::SelectMotion(std::vector<std::vector<Node>> mot
   double minCost = 9999999;
   std::vector<Node> motionMinCost; // Initialize as odom
 
-  // Check size of motion primitives
-  if (!motionPrimitives.empty()) {
-    // Iterate all motion primitive (motionPrimitive) in motionPrimitives
-    for (auto& motionPrimitive : motionPrimitives) {
-      // 1. Calculate cost terms
-double cost_dir_weight = 0.1; // Weight for the steering angle deviation cost
-double cost_colli_weight = 1000.0; // Weight for the collision cost
+  int num_collisions = 0;
 
-// Example for calculating cost_dir based on the absolute deviation of the steering angle from a reference angle
-//double reference_steering_angle = 0.0; // This could be a desired or reference steering angle
-double cost_dir = fabs(motionPrimitive.back().delta) ; //- reference_steering_angle
+  try {
+    // Check size of motion primitives
+    if (!motionPrimitives.empty()) {
+      // Iterate all motion primitive (motionPrimitive) in motionPrimitives
+      for (auto& motionPrimitive : motionPrimitives) {
+        // 1. Calculate cost terms
+        double cost_dir_weight = 0.1; // Weight for the steering angle deviation cost
+        double cost_colli_weight = 1000.0; // Weight for the collision cost
 
-// Example for calculating cost_colli based on collision checking
-double cost_colli = 0;//25.0; // Initialize collision cost to zero
-for (const auto& node : motionPrimitive) {
-  Node nodeMap = LocalToMapCorrdinate(node);
-  if (node.collision) {
-    // Increase collision cost when collision occurs
-    cost_colli += 25;
-   //cost_colli = 1 / (sizeof(motionPrimitive));
-  }
-}
+        // Example for calculating cost_dir based on the absolute deviation of the steering angle from a reference angle
+        //double reference_steering_angle = 0.0; // This could be a desired or reference steering angle
+        double cost_dir = fabs(motionPrimitive.back().delta) ; //- reference_steering_angle
 
+        // Example for calculating cost_colli based on collision checking
+        double cost_colli = 0;//25.0; // Initialize collision cost to zero
+        for (const auto& node : motionPrimitive) {
+          Node nodeMap = LocalToMapCorrdinate(node);
+          if (node.collision) {
+            // Increase collision cost when collision occurs
+            cost_colli += 25;
 
-// You may add more cost terms based on your specific requirements.
+            num_collisions += 1;
+            // std::cout << "----------------- Num Colloisions: " << num_collisions << " --------------------\n";
+          //cost_colli = 1 / (sizeof(motionPrimitive));
+          }
+        }
 
-// 2. Calculate total cost
-double cost_total = cost_dir_weight * cost_dir + cost_colli_weight * cost_colli;
+        // You may add more cost terms based on your specific requirements.
 
-      
-      // 3. Compare & Find minimum cost & minimum cost motion
-      if (cost_total < minCost) {
-        motionMinCost = motionPrimitive;
-        minCost = cost_total;
+        // 2. Calculate total cost
+        double cost_total = cost_dir_weight * cost_dir + cost_colli_weight * cost_colli;
+
+        // 3. Compare & Find minimum cost & minimum cost motion
+        if (cost_total < minCost) {
+          motionMinCost = motionPrimitive;
+          minCost = cost_total;
+        }
       }
-    }
-  }
 
-  // 4. Return minimum cost motion
-  return motionMinCost;
+      // // 4. If all the of them are colliding - reverse out. 
+      if ((minCost == 25000) && (num_collisions == 20)){
+        std::cout << "****************** all collisions. *************************\n";
+
+        // All paths invalid back up 
+        // motionMinCost = -1;
+        all_collisions = true;
+      } 
+    }
+
+    else {
+      printf("Motion Primitives are empty.\n");
+    }
+
+    // 4. Return minimum cost motion
+    std::cout << "Mini Cost: " << minCost;
+    return motionMinCost;
+  }
+  catch (...) {
+    std::cout << "An error occured in selectMotion().\n";
+  }
 }
 
 
