@@ -18,7 +18,7 @@ Saikhanbileg
     `rosrun rosserial_python serial_node.py _port:=/dev/ttyUSB0 _baud:=57600`
 
 3. Launch the rc car controller: 
-    `roslaunch rc_car_control rc_car_control.launch`
+    `roslaunch rc_car_control rc_car_controller.launch`
 
 4. Lauch the ORB SLAM for localisation and odometry tracking:
     `roslaunch orb3_ros_interface rgbd.launch`
