@@ -20,6 +20,8 @@ class RCCarController:
         self.speed_R_pwm_upper_bound = 1590  # fastest reverse 
         self.speed_R_pwm_lower_bound = 1575  # slowest reverse
 
+        self.prev_speed = 0
+
 
         self.max_steering_angle = 15 # Max steering angle in degrees
         self.max_speed = 0.6           # adjust this later
@@ -33,6 +35,7 @@ class RCCarController:
         # Publishers
         self.steer_pwm_pub = rospy.Publisher('/auto_cmd/steer', Int16, queue_size=10)
         self.throttle_pwm_pub = rospy.Publisher('/auto_cmd/throttle', Int16, queue_size=10)
+        self._autonomous_pub = rospy.Publisher('/auto_mode', Bool, queue_size=10)
 
         # Current state
         self.auto_mode = False
@@ -80,6 +83,8 @@ class RCCarController:
             pwm_value = self.speed_to_pwm(self.speed)
             rospy.loginfo("Speed command: %f %d" % (self.speed, pwm_value))
             self.publish_throttle_command(pwm_value)
+            
+            self.prev_speed = self.speed
 
     def publish_steering_command(self, pwm_value):
         pwm_signal = Int16()
@@ -87,6 +92,16 @@ class RCCarController:
         self.steer_pwm_pub.publish(pwm_signal)
 
     def publish_throttle_command(self, pwm_value):
+
+        if (pwm_value > 1500) and (self.prev_speed > 0):
+            pwm_signal = Int16()
+            pwm_signal.data = 1500
+            self.throttle_pwm_pub.publish(pwm_signal)
+            print("sent 1500")
+
+            rospy.sleep(1)
+
+
         pwm_signal = Int16()
         pwm_signal.data = pwm_value
         self.throttle_pwm_pub.publish(pwm_signal)
@@ -102,14 +117,28 @@ class RCCarController:
             # return int(self.pwm_neutral + max((speed / float(self.max_speed)), 0.1) * (self.speed_pwm_upper_bound - self.pwm_neutral))
             return (self.speed_F_pwm_lower_bound - ((speed/self.max_speed) * (self.speed_F_pwm_lower_bound - self.speed_F_pwm_upper_bound)))
         else:
-            return int(self.pwm_neutral + (speed / float(self.max_speed)) * (self.pwm_neutral - self.speed_pwm_lower_bound))
+            # return int(self.pwm_neutral + (speed / float(self.max_speed)) * (self.pwm_neutral - self.speed_pwm_lower_bound))
+            return (self.speed_R_pwm_lower_bound + ((-speed/self.max_speed) * (self.speed_R_pwm_upper_bound - self.speed_R_pwm_lower_bound)))
 
     def run(self):
         rate = rospy.Rate(10)  # 10 Hz
-        while not rospy.is_shutdown():
-            # Publish current steering command continuously
-            self.publish_steering_command(self.current_pwm)
-            rate.sleep()
+
+        # Enable autonomous mode
+        autonomous_on = Bool()
+        autonomous_on.data = 1
+        self._autonomous_pub.publish(autonomous_on)
+
+        try:
+            while not rospy.is_shutdown():
+                # Publish current steering command continuously
+                self.publish_steering_command(self.current_pwm)
+                rate.sleep()
+
+        except KeyboardInterrupt:
+            print("Keyboard interupt: Shutting down")
+            autonomous_on.data = False
+            self._autonomous_pub.publish(autonomous_on)
+        
 
 if __name__ == '__main__':
     auto_mode_topic = rospy.get_param('~auto_mode_topic', '/auto_mode')
