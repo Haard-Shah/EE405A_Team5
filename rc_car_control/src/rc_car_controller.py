@@ -4,10 +4,6 @@ import rospy
 from std_msgs.msg import Bool, Int16
 from ackermann_msgs.msg import AckermannDrive
 
-# class steer_cmd:
-#         def __init__(self, steer_angle, steer_velocity):
-#             self.steering_angle = steer_angle
-#             self.steering_angle_velocity = steer_velocity
 
 class RCCarController:
     def __init__(self, auto_mode_topic='/auto_mode', drive_command_topic='/car_1/command'):
@@ -15,11 +11,15 @@ class RCCarController:
         rospy.init_node('rc_car_controller')
 
         # PWM bounds and steering constants
-        self.pwm_upper_bound = 1900  # Full right
-        self.pwm_lower_bound = 1100  # Full left
+        self.steer_pwm_upper_bound = 1900  # Full right
+        self.steer_pwm_lower_bound = 1100  # Full left
         self.pwm_neutral = 1500      # Neutral
-        self.max_steering_angle = 30 # Max steering angle in degrees
-        self.max_speed = 5           # adjust this later
+
+        self.speed_pwm_upper_bound = 1700  # Full right
+        self.speed_pwm_lower_bound = 1400  # Full left
+
+        self.max_steering_angle = 15 # Max steering angle in degrees
+        self.max_speed = 0.6           # adjust this later
 
         # Subscribers
         self.auto_mode_sub = rospy.Subscriber(auto_mode_topic, Bool, self.auto_mode_callback)
@@ -28,8 +28,8 @@ class RCCarController:
         # self.throttle_sub = rospy.Subscriber(throttle_topic, Int16, self.throttle_callback)
 
         # Publishers
-        self.steer_pwm_pub = rospy.Publisher('/rc_car/steer_pwm', Int16, queue_size=10)
-        self.throttle_pwm_pub = rospy.Publisher('/rc_car/throttle_pwm', Int16, queue_size=10)
+        self.steer_pwm_pub = rospy.Publisher('/auto_cmd/steer', Int16, queue_size=10)
+        self.throttle_pwm_pub = rospy.Publisher('/auto_cmd/throttle', Int16, queue_size=10)
 
         # Current state
         self.auto_mode = False
@@ -53,7 +53,10 @@ class RCCarController:
     def steer_callback(self, steer_cmd):
         if self.auto_mode:
             # Map steering_angle to target PWM
-            self.target_pwm = self.steering_angle_to_pwm(steer_cmd.steering_angle)
+            steer_deg = steer_cmd.steering_angle * 57.29577951 # rad to deg
+            self.target_pwm = self.steering_angle_to_pwm(steer_deg)
+
+            # rospy.loginfo("Angle command: %s deg   PWM: %s" % (steer_deg, self.target_pwm))
 
             if steer_cmd.steering_angle_velocity > 0:
                 # Calculate the number of steps for transition based on steering_angle_velocity
@@ -71,8 +74,8 @@ class RCCarController:
     def throttle_callback(self, ackermann_cmd):
         if self.auto_mode:
             self.speed = ackermann_cmd.speed
-            rospy.loginfo("Speed command: %d" % self.speed)
             pwm_value = self.speed_to_pwm(self.speed)
+            rospy.loginfo("Speed command: %d %d" % (self.speed, pwm_value))
             self.publish_throttle_command(pwm_value)
 
     def publish_steering_command(self, pwm_value):
@@ -86,17 +89,16 @@ class RCCarController:
         self.throttle_pwm_pub.publish(pwm_signal)
 
     def steering_angle_to_pwm(self, angle):
-        rospy.loginfo("Angle command: %s rads" % angle)
         #TODO: May need to add rads to deg or rads to pwm logic here.
         # Map steering angle to PWM value
-        return int(self.pwm_neutral + (angle / self.max_steering_angle) * (self.pwm_upper_bound - self.pwm_neutral))
+        return int(self.pwm_neutral + (angle / self.max_steering_angle) * (self.steer_pwm_upper_bound - self.pwm_neutral))
 
     def speed_to_pwm(self, speed):
         # Convert speed to PWM value
         if speed >= 0:
-            return int(self.pwm_neutral + (speed / float(self.max_speed)) * (self.pwm_upper_bound - self.pwm_neutral))
+            return int(self.pwm_neutral + max((speed / float(self.max_speed)), 0.1) * (self.speed_pwm_upper_bound - self.pwm_neutral))
         else:
-            return int(self.pwm_neutral + (speed / float(self.max_speed)) * (self.pwm_neutral - self.pwm_lower_bound))
+            return int(self.pwm_neutral + (speed / float(self.max_speed)) * (self.pwm_neutral - self.speed_pwm_lower_bound))
 
     def run(self):
         rate = rospy.Rate(10)  # 10 Hz
@@ -109,6 +111,8 @@ if __name__ == '__main__':
     auto_mode_topic = rospy.get_param('~auto_mode_topic', '/auto_mode')
     steer_topic = rospy.get_param('~steer_topic', '/auto_cmd/steer')
     throttle_topic = rospy.get_param('~throttle_topic', '/auto_cmd/throttle')
+    drive_command_topic = rospy.get_param('~drive_command_topic', '/car_1/command')
 
-    controller = RCCarController(auto_mode_topic, steer_topic, throttle_topic)
+    # controller = RCCarController(auto_mode_topic, steer_topic, throttle_topic)
+    controller = RCCarController(auto_mode_topic, drive_command_topic)
     controller.run()

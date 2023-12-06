@@ -58,7 +58,7 @@ HeightMap::HeightMap(ros::NodeHandle node, ros::NodeHandle priv_nh)
   // subscribe to Velodyne data points
   // TODO: find and change the topic name of the point cloud data
   // DONE
-  velodyne_scan_ = node.subscribe("/camera/depth/points", 10,
+  velodyne_scan_ = node.subscribe("/camera/depth/image_rect_raw/projected_points", 10,
                                   &HeightMap::processData, this,
                                   ros::TransportHints().tcpNoDelay(true));
 }
