@@ -2,13 +2,13 @@
 Team 11 Autonomous Racing
 
 
-
 ##### Team Members
 Elena
 Hooman
 Haard
 Akhdan
 Saikhanbileg
+
 
 ## How to use: 
 1. Launch the sensors on board the car using:  
@@ -60,6 +60,6 @@ Saikhanbileg
 
 ### NOTES: 
 * ~/.bashrc has been updated with the source script.
-* For Rviz visualisation, there is a config file save in the EE405A_Team5 directory and can be used by calling `rosrun rviz rviz -d <filename>`
-* currntly the auto_mode is off to toggle it on for autonomous driving run `rostopic pub /auto_mode std_msgs/Bool 1`
-* If the car speed is to slow or fast, adjust the upper and lower bounds of the PWM in the `rc_car_controller.py` [ONLY IF NEEDED] 
+* For Rviz visualisation, there is a config file saved in the EE405A_Team5 directory and can be used by calling `rosrun rviz rviz -d <filename>`
+* Currently the auto_mode is off. To toggle it on for autonomous driving run `rostopic pub /auto_mode std_msgs/Bool 1`
+* If the car speed is too slow or fast, adjust the upper and lower bounds of the PWM in the `rc_car_controller.py` [ONLY IF NEEDED] 
