@@ -19,7 +19,7 @@ def chat(riddle_msg, image_msg):
     global key, api
 
     riddle = riddle_msg.data
-    image = image_msg.data
+    #image = image_msg.data
 
     print(riddle)
 
@@ -40,7 +40,7 @@ def chat(riddle_msg, image_msg):
 	    print(answer)
 	    submission = save_image()
 	    submission.class_id = answer
-	    submission.save_img = image
+	    submission.save_img = image_msg
             pub_submit.publish(submission)
             break
 	else:
@@ -53,7 +53,7 @@ def listener(data):
 
 if __name__ == '__main__':
     sync = ApproximateTimeSynchronizer([Subscriber('/qr_codes', String), 
-                                        Subscriber('/qr', Image)],
+                                        Subscriber('/camera/color/image_raw', Image)],
                                        queue_size = 10, slop = 0.1)
     sync.registerCallback(chat)
     rospy.spin()

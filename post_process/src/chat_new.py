@@ -39,7 +39,7 @@ headers = {"Content-Type": "application/json", "Authorization": "Bearer sk-loenH
 def image_callback(msg):
     # print("Received an image!")
     global image
-    image = msg.data
+    image = msg
 
 def qr_callback(msg):
     # print("Received a target!")
@@ -72,7 +72,7 @@ def qr_callback(msg):
 
 def main():
     # Define your image topic
-    image_topic = "/qr"
+    image_topic = "/camera/color/image_raw"
     # Set up your subscriber and define its callback
     rospy.Subscriber(image_topic, Image, image_callback)
     
