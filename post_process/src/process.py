@@ -18,6 +18,8 @@ rate = rospy.Rate(10.0)
 
 submitted = []
 
+buffer = 100
+
 # 3D rotation around y-axis.
 def rotate_y(image, rad):
     height, width, _ = image.shape
@@ -72,7 +74,7 @@ def filter(image, thres):
     return image
 
 def warp(image):
-    width, height = 640, 480
+    width, height = 720, 1280
 
     pts1 = np.float32([[0, 0], [0, 0], [0, 0], [0, 0]])
     pts2 = np.float32([[0, 0], [width, 0], [0, height], [width, height]])
@@ -85,63 +87,59 @@ def listener(image_msg, bounding_msg):
     global bridge, submitted
 
     for box in bounding_msg.bounding_boxes:
+        print("Processing Bound box:", box)
+        if(box.Class != "APRIL_TAG" and box.Class != "QR_IMAGE"):
+            if((int(box.Class) in submitted)):
+                return
+            
+        #xcenter = int((box.xmin + box.xmax) / 2)
+        #ycenter = int((box.ymin + box.ymax) / 2)
+        #xdelta = int(1.5 * (box.xmax - box.xmin))
+        #ydelta = int(1.5 * (box.ymax - box.ymin))
+            
+        if(box.probability > 0.8 and box.Class != "APRIL_TAG" and box.Class != "QR_IMAGE"):
+            print("Detection Prob high, processing img")
 
-	xcenter = int((box.xmin + box.xmax) / 2)
-	ycenter = int((box.ymin + box.ymax) / 2)
-	xdelta = int(1.5 * (box.xmax - box.xmin))
-	ydelta = int(1.5 * (box.ymax - box.ymin))
-        
-	if(box.probability > 0.9 and box.Class != "APRIL_TAG" and box.Class != "QR_IMAGE" and (xcenter > 75 and xcenter < 565) and not ((int(box.Class)) in submitted)):
-	    submission = save_image()
-	    submission.class_id = int(box.Class)
+            submission = save_image()
+            submission.class_id = int(box.Class)
 
-	    try:
+            try:
                 cv2_img = bridge.imgmsg_to_cv2(image_msg, "bgr8")
-            except CvBridgeError, e:
+            except CvBridgeError as e:
                 print(e)
             except:
                 print("Something wrong!")
             else:
 
-                cv2_crop = cv2_img[(ycenter -ydelta):(ycenter + ydelta), (xcenter - xdelta):(xcenter + xdelta)]
-		try:
-                    submission.save_img = bridge.cv2_to_imgmsg(cv2_crop, "bgr8")
-                except CvBridgeError, e:
-                    print(e)
-                except:
-                    print("Something wrong!")
-                else:
-	            submission.x_pose = 0
-		    submission.y_pose = 0
-	    	    pub_submit.publish(submission)
-		    submitted.append(int(box.Class))
-		    print("submitted ")
- 	            print(submission.class_id)
-		    print(box.probability)
-	else:
-	    if(box.probability > 0.5 and box.Class == "QR_IMAGE" and (xcenter > 75 and xcenter < 565)):
-                try:
-                    cv2_img = bridge.imgmsg_to_cv2(image_msg, "bgr8")
-                except CvBridgeError, e:
-                    print(e)
-                except:
-                    print("Something wrong!")
-                else:
+                # Draw the bounding box on the imag for debugging purposes
+                # width = box.xmax - box.xmin
+                # height = box.ymax - box.ymin
 
-                    cv2_crop = cv2_img[(ycenter -ydelta):(ycenter + ydelta), (xcenter - xdelta):(xcenter + xdelta)]
-		    try:
-                        save_img = bridge.cv2_to_imgmsg(cv2_crop, "bgr8")
-                    except CvBridgeError, e:
-                        print(e)
-                    except:
-                        print("Something wrong!")
-                    else:
-	                pub_qr.publish(save_img)
- 	                print("Get QR!")
+                # cv2_crop = cv2.rectangle(cv2_img, (box.xmin//2, box.ymin//2), (min(int(box.xmax*1.5), 720), min(int(box.ymax*1.5), 1280)), (255, 255, 0), 3)
+                cv2_crop = cv2.rectangle(cv2_img, (max(box.xmin-buffer, 0), max(box.ymin-buffer, 0)), (min(box.xmax+buffer, 1280), min(box.ymax+buffer, 720)), (255, 255, 0), 3)
+                # cv2_crop = cv2_img[box.ymin - buffer:box.ymax+buffer, box.xmin - buffer:box.xmax + buffer]
+                # cv2_crop = cv2_img[:, box.xmin:box.xmax]
+            try:
+                print("Cropping image")
+                submission.save_img = bridge.cv2_to_imgmsg(cv2_crop, "bgr8")
+            except CvBridgeError as e:
+                print(e)
+            except:
+                print("Something wrong!")
+            else:
+                submission.x_pose = 0
+                submission.y_pose = 0
+                pub_submit.publish(submission)
+                submitted.append(int(box.Class))
+                print("submitted ")
+                print(submission.class_id)
+                print(box.probability)
 
 if __name__ == '__main__':
+	# /darknet_ros/detection_image
     sync = ApproximateTimeSynchronizer([Subscriber('/camera/color/image_raw', Image), 
                                         Subscriber('/darknet_ros/bounding_boxes', BoundingBoxes)],
                                        queue_size = 5, slop = 0.1)
+    print("Node running ...")
     sync.registerCallback(listener)
     rospy.spin()
