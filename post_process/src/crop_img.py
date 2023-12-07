@@ -36,6 +36,8 @@ def publish_image(cv2_file):
         ros_img = bridge.cv2_to_imgmsg(cv2_file, "bgr8")
     except CvBridgeError, e:
         print(e)
+    except:
+        print("Something wrong!")
     else:
         # Publish image
         image_pub.publish(ros_img)
@@ -76,7 +78,9 @@ def box_callback(msg):
                     # Convert your ROS Image message to OpenCV2
                     cv2_img = bridge.imgmsg_to_cv2(image, "bgr8")
                 except CvBridgeError, e:
-                    print(e)
+                    print(e) 
+                except:
+                    print("Something wrong!")
                 else:
                     cv2_crop = cv2_img[ymin:ymax, xmin:xmax]
                     # Save your OpenCV2 image as a jpeg 

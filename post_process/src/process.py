@@ -97,6 +97,8 @@ def listener(image_msg, bounding_msg):
                 cv2_img = bridge.imgmsg_to_cv2(image_msg, "bgr8")
             except CvBridgeError, e:
                 print(e)
+            except:
+                print("Something wrong!")
             else:
 
                 cv2_crop = cv2_img[(ycenter -ydelta):(ycenter + ydelta), (xcenter - xdelta):(xcenter + xdelta)]
@@ -104,6 +106,8 @@ def listener(image_msg, bounding_msg):
                     submission.save_img = bridge.cv2_to_imgmsg(cv2_crop, "bgr8")
                 except CvBridgeError, e:
                     print(e)
+                except:
+                    print("Something wrong!")
                 else:
 	            submission.x_pose = 0
 		    submission.y_pose = 0
@@ -117,6 +121,8 @@ def listener(image_msg, bounding_msg):
                     cv2_img = bridge.imgmsg_to_cv2(image_msg, "bgr8")
                 except CvBridgeError, e:
                     print(e)
+                except:
+                    print("Something wrong!")
                 else:
 
                     cv2_crop = cv2_img[(ycenter -ydelta):(ycenter + ydelta), (xcenter - xdelta):(xcenter + xdelta)]
@@ -124,6 +130,8 @@ def listener(image_msg, bounding_msg):
                         save_img = bridge.cv2_to_imgmsg(cv2_crop, "bgr8")
                     except CvBridgeError, e:
                         print(e)
+                    except:
+                        print("Something wrong!")
                     else:
 	                pub_qr.publish(save_img)
  	                print("Get QR!")

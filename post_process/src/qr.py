@@ -34,6 +34,8 @@ def detect(image_msg):
         #print(decoded)
     except CvBridgeError, e:
         print(e)
+    except:
+        print("Something wrong!")
     else:
         if (decoded):
             for item in decoded:
