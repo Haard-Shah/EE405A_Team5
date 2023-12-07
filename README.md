@@ -12,6 +12,7 @@ Saikhanbileg
 
 ## How to use: 
 1. Launch the sensors on board the car using:  
+    `roslaunch realsense2_camera rs_aligned_depth.launch`
     `roslaunch realsense2_camera rs_rgbd.launch`  
 
 2. Lauch the ORB SLAM for localisation and odometry tracking:  

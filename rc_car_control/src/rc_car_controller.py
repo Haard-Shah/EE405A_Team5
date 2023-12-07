@@ -94,6 +94,8 @@ class RCCarController:
             elif (self.speed < 0) and (self.direction == 1):
                 self.direction = -1
                 self.prev_speed = 0
+
+            print("Car direction: %s" % ("Forward" if self.direction == 1 else "Reverse"))
             
             self.prev_speed = self.speed
 

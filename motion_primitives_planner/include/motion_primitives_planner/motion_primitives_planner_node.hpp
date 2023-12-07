@@ -134,8 +134,8 @@ class MotionPlanner
     double MOTION_VEL = DIST_RESOL / TIME_RESOL; // [m/s] velocity between each motion (for rollout)
     double DELTA_RESOL = 1.5 * (M_PI / 180.0); // [rad] angle resolution for steering angle sampling was 0.5
     double MAX_DELTA = 15.0 * (M_PI / 180.0); // [rad] maximum angle for steering angle sampling was 10.0
-    double MAX_PROGRESS = 7.0; // [m] max progress of motion was 5
-    double INFLATION_SIZE = 1.0 / DIST_RESOL; // [grid] inflation size [m] / grid_res [m/grid] was 0.5
+    double MAX_PROGRESS = 3.0; // [m] max progress of motion was 5
+    double INFLATION_SIZE = 0.5 / DIST_RESOL; // [grid] inflation size [m] / grid_res [m/grid] was 0.5
 
     // Map info
     // TODO: Match below parameters with your cost map 

@@ -96,7 +96,7 @@ void MotionPlanner::PublishCommand(std::vector<Node> motionMinCost)
   //}
   //double steeringControl = motionMinCost.i().delta;
   //double steeringControl = atan2((motionMinCost.front().x - motionMinCost.back().x), (motionMinCost.front().y - motionMinCost.back().y));
-  double speedControl = 0.5 * (1 - std::abs(motionMinCost.front().delta) / this->MAX_DELTA);//0.3;
+  double speedControl = std::max(0.5 * (1 - std::abs(motionMinCost.front().delta) / this->MAX_DELTA), 0.05);//0.3;
   //double speedControl = (1.0 / (1 + motionMinCost.front().delta));
 
   std::cout << "Collisions: " << all_collisions << std::endl;
@@ -226,7 +226,7 @@ std::vector<Node> MotionPlanner::RolloutMotion(Node startNode,
                                             + std::pow(currMotionNode.y - collisionPointNodeMap.y, 2));
 
         // Define a maximum distance that corresponds to minimal severity
-        const double MAX_COLLISION_DISTANCE = 7.0; // was 5
+        const double MAX_COLLISION_DISTANCE = 3.0; // was 5
 
         // Ensure that the distance is capped at the maximum collision distance
         distanceToObstacle = std::min(distanceToObstacle, MAX_COLLISION_DISTANCE);
