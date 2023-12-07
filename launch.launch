@@ -1,0 +1,32 @@
+<launch>
+    
+    <!-- Local Costmap Generator Node -->
+    <node pkg="local_costmap_generator" type="heightmap_node" name="heightmap_node">
+        <!-- <param name="dev" value="$(arg joy_dev)" /> -->
+        <!-- <param name="deadzone" value="0.3" /> -->
+        <!-- <param name="autorepeat_rate" value="20" /> -->
+        <!-- <remap from="joy" to="$(arg joy_topic)" /> -->
+    </node>
+
+    <node pkg="local_costmap_generator" type="heightmap_costmap_node" name="heightmap_costmap_node" output="screen">
+        <!-- <param name="dev" value="$(arg joy_dev)" /> -->
+        <!-- <param name="deadzone" value="0.3" /> -->
+        <!-- <param name="autorepeat_rate" value="20" /> -->
+        <!-- <remap from="joy" to="$(arg joy_topic)" /> -->
+    </node>
+
+    
+    <!-- Motion Primitives Planner Node -->
+    <node name="motion_primitives_planner_node" pkg="motion_primitives_planner" type="motion_primitives_planner_node" output="screen"/> 	
+    </node>
+
+
+    <!-- RC Car Control Node -->
+    <node name="rc_car_controller" pkg="rc_car_control" type="rc_car_controller.py" output="screen">
+        <!-- Parameters can be added here if needed. Change the topics if they are different. -->
+        <param name="auto_mode_topic" value="/auto_mode" />
+        <param name="steer_topic" value="/auto_cmd/steer" />
+        <param name="throttle_topic" value="/auto_cmd/throttle" />
+    </node>
+
+</launch>
