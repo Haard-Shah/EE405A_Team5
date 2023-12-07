@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import rospy
 import requests
+import re
 
 from std_msgs.msg import String
 from sensor_msgs.msg import Image
@@ -20,7 +21,7 @@ def chat(riddle_msg, image_msg):
     riddle = riddle_msg.data
     image = image_msg.data
 
-    print("Get Here!")
+    print(riddle)
 
     if len(riddle) == 0:
         return
@@ -31,15 +32,15 @@ def chat(riddle_msg, image_msg):
 	completion = requests.post(api, headers = headers, json = payload)
         response = completion.json()["choices"][0]["message"]["content"]
 	answer = re.search(r'\d+', response).group()
-        print(completion)
-        answer = completion
+        # print(completion)
+        # answer = completion
         
         if answer != None:
             print("RIDDLE_SOLVED: ")
 	    print(answer)
 	    submission = save_image()
 	    submission.class_id = answer
-	    submission.save_img = image_msg.data
+	    submission.save_img = image
             pub_submit.publish(submission)
             break
 	else:

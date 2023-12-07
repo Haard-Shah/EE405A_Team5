@@ -20,6 +20,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 # OpenCV2 for saving an image
 import cv2
+# re for searching first instance of number
 import re
 
 # Final Result Message

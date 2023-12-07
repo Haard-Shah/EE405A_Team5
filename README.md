@@ -39,10 +39,23 @@ Saikhanbileg
 
 5. Preception system: [Recommend to use a new tab]
     a. Launch the Yolo v4 model 
-     ``
+     `roslaunch darknet_ros custom.launch`
 
-    b. Launch the image saver node
-     ``
+    b. Launch post processing node
+      `rosrun post_process process.py`
+
+    c. Launch qr detection node
+      `rosrun nodelet nodelet manager __name:=nodelet_manager`
+      in other terminal,
+      `rosrun nodelet nodelet load qr_detector/qr_detector_nodelet nodelet_manager`
+
+    d. Launch chat GPT
+      `rosrun post_process chat.py`
+      or
+      `rosrun post_process chat_new.py`
+
+    e. Launch the image saver node
+     `rosrun final_result final_result`
     
 
 ### NOTES: 
@@ -50,6 +63,3 @@ Saikhanbileg
 * For Rviz visualisation, there is a config file save in the EE405A_Team5 directory and can be used by calling `rosrun rviz rviz -d <filename>`
 * currntly the auto_mode is off to toggle it on for autonomous driving run `rostopic pub /auto_mode std_msgs/Bool 1`
 * If the car speed is to slow or fast, adjust the upper and lower bounds of the PWM in the `rc_car_controller.py` [ONLY IF NEEDED] 
-
-##### Test Commit
-Test Commit
