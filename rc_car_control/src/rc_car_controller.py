@@ -21,6 +21,8 @@ class RCCarController:
         self.speed_R_pwm_lower_bound = 1575  # slowest reverse
 
         self.prev_speed = 0
+        self.direction = 1 # 1 for forward, -1 for reverse
+        self.cnt = 0
 
 
         self.max_steering_angle = 15 # Max steering angle in degrees
@@ -83,6 +85,15 @@ class RCCarController:
             pwm_value = self.speed_to_pwm(self.speed)
             rospy.loginfo("Speed command: %f %d" % (self.speed, pwm_value))
             self.publish_throttle_command(pwm_value)
+
+            # check if direction has changed
+            if (self.speed > 0) and (self.direction == -1):
+                self.direction = 1
+                # self.prev_speed = 0
+
+            elif (self.speed < 0) and (self.direction == 1):
+                self.direction = -1
+                self.prev_speed = 0
             
             self.prev_speed = self.speed
 
@@ -92,18 +103,40 @@ class RCCarController:
         self.steer_pwm_pub.publish(pwm_signal)
 
     def publish_throttle_command(self, pwm_value):
-
-        if (pwm_value > 1500) and (self.prev_speed > 0):
+        # The car is in race mode and needs to be in neutral before switching to reverse
+        # When switching from forward to reverse, the car needs to be in neutral for 0.1 second
+            # when in reverse, the PWM signal needs to be swapped with neutral value every 5 time otherwise the reverse signal will be lost
+        
+        # Set neutral PWM signal when switching from forward to reverse
+        if (self.direction == -1) and (self.prev_speed == 0):
             pwm_signal = Int16()
-            pwm_signal.data = 1500
+            pwm_signal.data = self.pwm_neutral
             self.throttle_pwm_pub.publish(pwm_signal)
-            print("sent 1500")
+            rospy.sleep(0.1)
 
-            rospy.sleep(1)
+        # Start reversing
+        if (self.direction == -1) and (self.prev_speed != 0):
+            pwm_signal = Int16()
+            pwm_signal.data = self.pwm_neutral if self.cnt % 5 == 0 else pwm_value
+            self.throttle_pwm_pub.publish(pwm_signal)
+            self.cnt += 1
+        
+        # Start moving forward
+        if (self.direction == 1):
+            pwm_signal = Int16()
+            pwm_signal.data = pwm_value
+            self.throttle_pwm_pub.publish(pwm_signal)
+            self.cnt = 0
 
 
-        pwm_signal = Int16()
-        pwm_signal.data = pwm_value
+        # pwm_signal = Int16()
+        # if cnt % 10 == 0:
+        #     pwm_value = 1500
+        # pwm_signal.data = pwm_value
+        # cnt += 1
+        # if cnt > 1000:
+        #     cnt = 0
+
         self.throttle_pwm_pub.publish(pwm_signal)
 
     def steering_angle_to_pwm(self, angle):

@@ -21,7 +21,7 @@ def chat(riddle_msg, image_msg):
     global api, answered
 
     riddle = riddle_msg.data
-    image = image_msg.data
+    #image = image_msg.data
 
     print(riddle)
 
