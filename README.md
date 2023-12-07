@@ -1,4 +1,4 @@
-# EE204A_Team5
+# EE405A_Team5
 Team 11 Autonomous Racing
 
 
@@ -9,6 +9,8 @@ Haard
 Akhdan
 Saikhanbileg
 
+### We now have a launch file to directly launch everything we need:
+'roslaunch ./launch.launch'
 
 ## How to use: 
 1. Launch the sensors on board the car using:  
