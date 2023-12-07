@@ -39,7 +39,7 @@ headers = {"Content-Type": "application/json", "Authorization": "Bearer sk-loenH
 def image_callback(msg):
     # print("Received an image!")
     global image
-    image = msg.data
+    image = msg
 
 def qr_callback(msg):
     # print("Received a target!")
@@ -55,15 +55,18 @@ def qr_callback(msg):
 	payload = {"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "Do not say anything but decimal integers above nine.\n\n" + riddle}], "temperature": 0}
 	completion = requests.post(api, headers = headers, json = payload)
         response = completion.json()["choices"][0]["message"]["content"]
-	answer = re.search(r'\d+', response).group()
+	checkme = re.search(r'\d+', response)
+	if(checkme == None):
         #answer = response
+	    return
+	answer = checkme.group(0)
         
         if answer != None:
             print("RIDDLE_SOLVED: ")
 	    print(answer)
 	    submission = save_image()
-	    submission.class_id = answer
-	    submission.save_img = image
+	    submission.class_id = int(answer)
+	    #submission.save_img = image
             pub_submit.publish(submission)
             break
 	else:
@@ -72,11 +75,11 @@ def qr_callback(msg):
 
 def main():
     # Define your image topic
-    image_topic = "/qr"
+    image_topic = "/camera/color/image_raw"
     # Set up your subscriber and define its callback
     rospy.Subscriber(image_topic, Image, image_callback)
     
-    qr_topic = "/qr_codes"
+    qr_topic = "qr_codes"
 
     rospy.Subscriber(qr_topic, String, qr_callback)
 

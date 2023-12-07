@@ -16,6 +16,8 @@ pub_qr = rospy.Publisher('/qr', Image, queue_size = 10)
 pub_submit = rospy.Publisher('/target_detection', save_image, queue_size = 10)
 rate = rospy.Rate(10.0)
 
+submitted = []
+
 # 3D rotation around y-axis.
 def rotate_y(image, rad):
     height, width, _ = image.shape
@@ -80,7 +82,7 @@ def warp(image):
     return warped
 
 def listener(image_msg, bounding_msg):
-    global bridge
+    global bridge, submitted
 
     for box in bounding_msg.bounding_boxes:
 
@@ -89,7 +91,7 @@ def listener(image_msg, bounding_msg):
 	xdelta = int(1.5 * (box.xmax - box.xmin))
 	ydelta = int(1.5 * (box.ymax - box.ymin))
         
-	if(box.probability > 0.9 and box.Class != "APRIL_TAG" and box.Class != "QR_IMAGE" and (xcenter > 75 and xcenter < 565)):
+	if(box.probability > 0.9 and box.Class != "APRIL_TAG" and box.Class != "QR_IMAGE" and (xcenter > 75 and xcenter < 565) and not ((int(box.Class)) in submitted)):
 	    submission = save_image()
 	    submission.class_id = int(box.Class)
 
@@ -112,6 +114,7 @@ def listener(image_msg, bounding_msg):
 	            submission.x_pose = 0
 		    submission.y_pose = 0
 	    	    pub_submit.publish(submission)
+		    submitted.append(int(box.Class))
 		    print("submitted ")
  	            print(submission.class_id)
 		    print(box.probability)
