@@ -10,7 +10,7 @@ Akhdan
 Saikhanbileg
 
 ### We now have a launch file to directly launch everything we need:
-'roslaunch launch.launch'
+'roslaunch ./launch.launch'
 
 ## How to use: 
 1. Launch the sensors on board the car using:  
