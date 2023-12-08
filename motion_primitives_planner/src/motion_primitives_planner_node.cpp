@@ -96,7 +96,7 @@ void MotionPlanner::PublishCommand(std::vector<Node> motionMinCost)
   //}
   //double steeringControl = motionMinCost.i().delta;
   //double steeringControl = atan2((motionMinCost.front().x - motionMinCost.back().x), (motionMinCost.front().y - motionMinCost.back().y));
-  double speedControl = std::max(0.3 * (1 - std::abs(motionMinCost.front().delta) / this->MAX_DELTA), 0.05);//0.5;
+  double speedControl = std::max(0.5 * (1 - std::abs(motionMinCost.front().delta) / this->MAX_DELTA), 0.05);//0.5;
   //double speedControl = (1.0 / (1 + motionMinCost.front().delta));
 
   std::cout << "Collisions: " << all_collisions << std::endl;
