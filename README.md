@@ -9,13 +9,18 @@ Haard
 Akhdan
 Saikhanbileg
 
-### We now have a launch file to directly launch everything we need:
-'roslaunch ./launch.launch'
 
 ## How to use: 
+### We now have a launch file to directly launch everything we need:
+1. Launch the launch file:
+    `roslaunch ./launch.launch`
+
+ 	OR
+
+### Launch each file seperately:   
 1. Launch the sensors on board the car using:  
-    `roslaunch realsense2_camera rs_aligned_depth.launch`
-    `roslaunch realsense2_camera rs_rgbd.launch`  
+    `roslaunch realsense2_camera rs_rgbd.launch`
+    `roslaunch realsense2_camera rs_aligned_depth.launch`  
 
 	OR
 
