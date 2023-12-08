@@ -26,7 +26,7 @@ class RCCarController:
 
 
         self.max_steering_angle = 15 # Max steering angle in degrees
-        self.max_speed = 0.6           # adjust this later
+        self.max_speed = 0.3           # adjust this later  was 0.6
 
         # Subscribers
         self.auto_mode_sub = rospy.Subscriber(auto_mode_topic, Bool, self.auto_mode_callback)
