@@ -17,13 +17,13 @@ Saikhanbileg
     `roslaunch realsense2_camera rs_aligned_depth.launch`
     `roslaunch realsense2_camera rs_rgbd.launch`  
 
-2. Lauch the ORB SLAM for localisation and odometry tracking:  
+	OR
+
+1. Lauch the ORB SLAM for localisation and odometry tracking:  
     `roslaunch orb3_ros_interface rgbd.launch`  
 
-3. For preception systems: [Recommend to use a new tab]  
-    `roslaunch darkent_ros custom.launch`  
 
-4. Motion Planning systems: [Recommend to use a new tab]  
+2. Motion Planning systems: [Recommend to use a new tab]  
     a. First launch the depth2pointcloud package:  
      `roslaunch pointcloud_projection depth_image_projection.launch`  
 
@@ -40,7 +40,7 @@ Saikhanbileg
     e. Launch the rc car controller:  
      `roslaunch rc_car_control rc_car_controller.launch`  
 
-5. Preception system: [Recommend to use a new tab]  
+3. Preception system: [Recommend to use a new tab]  
     a. Launch the Yolo v4 model  
      `roslaunch darknet_ros custom.launch`  
 
